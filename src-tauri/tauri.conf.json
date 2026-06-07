@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "DeepSeekMonitorWindows",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "identifier": "com.deepseek.monitor.windows",
   "build": {
     "frontendDist": "../dist",
