@@ -1,0 +1,11 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "login-sync",
+  "description": "minimal permissions for the login-sync window - no Tauri API access, navigation only to DeepSeek",
+  "windows": [
+    "login-sync"
+  ],
+  "permissions": [
+    "core:default"
+  ]
+}

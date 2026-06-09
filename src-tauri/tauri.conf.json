@@ -10,15 +10,18 @@
     "beforeBuildCommand": "powershell -ExecutionPolicy Bypass -File scripts/build.ps1"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
         "label": "main",
         "title": "DeepSeek Monitor Windows",
-        "width": 356,
-        "height": 600,
-        "resizable": false,
-        "fullscreen": false,
+        "width": 380,
+        "height": 680,
+        "minWidth": 340,
+        "minHeight": 500,
+        "maxWidth": 600,
+        "maxHeight": 1200,
+        "resizable": true,
         "decorations": false,
         "transparent": true,
         "shadow": false,
@@ -26,7 +29,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://asset.localhost https://tauri.localhost data:; script-src 'self'"
     }
   },
   "bundle": {

@@ -21,7 +21,140 @@ pub fn run() {
         Emitter, Manager, PhysicalPosition, Position, WebviewWindow,
     };
 
-    #[derive(Debug, Default, Deserialize, Serialize)]
+    // --- DPAPI (Windows Data Protection API) for encrypting credentials at rest ---
+    #[repr(C)]
+    struct DataBlob {
+        cb_data: u32,
+        pb_data: *mut u8,
+    }
+
+    #[link(name = "crypt32")]
+    extern "system" {
+        fn CryptProtectData(
+            pdata_in: *const DataBlob,
+            sz_data_descr: *const u16,
+            p_optional_entropy: *const DataBlob,
+            pv_reserved: *mut core::ffi::c_void,
+            p_prompt_struct: *const core::ffi::c_void,
+            dw_flags: u32,
+            pdata_out: *mut DataBlob,
+        ) -> i32;
+
+        fn CryptUnprotectData(
+            pdata_in: *const DataBlob,
+            p_sz_data_descr: *mut *mut u16,
+            p_optional_entropy: *const DataBlob,
+            pv_reserved: *mut core::ffi::c_void,
+            p_prompt_struct: *const core::ffi::c_void,
+            dw_flags: u32,
+            pdata_out: *mut DataBlob,
+        ) -> i32;
+    }
+
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn LocalFree(h_mem: isize) -> isize;
+    }
+
+    fn dpapi_encrypt(plain: &[u8]) -> Result<Vec<u8>, String> {
+        let data_in = DataBlob {
+            cb_data: plain.len() as u32,
+            pb_data: plain.as_ptr() as *mut u8,
+        };
+        let mut data_out = DataBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
+        let result = unsafe {
+            CryptProtectData(
+                &data_in,
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                std::ptr::null(),
+                0,
+                &mut data_out,
+            )
+        };
+        if result == 0 {
+            return Err("DPAPI 加密失败".to_string());
+        }
+        let encrypted = unsafe {
+            std::slice::from_raw_parts(data_out.pb_data, data_out.cb_data as usize).to_vec()
+        };
+        unsafe {
+            LocalFree(data_out.pb_data as isize);
+        }
+        Ok(encrypted)
+    }
+
+    fn dpapi_decrypt(encrypted: &[u8]) -> Result<Vec<u8>, String> {
+        let data_in = DataBlob {
+            cb_data: encrypted.len() as u32,
+            pb_data: encrypted.as_ptr() as *mut u8,
+        };
+        let mut data_out = DataBlob {
+            cb_data: 0,
+            pb_data: std::ptr::null_mut(),
+        };
+        let result = unsafe {
+            CryptUnprotectData(
+                &data_in,
+                std::ptr::null_mut(),
+                std::ptr::null(),
+                std::ptr::null_mut(),
+                std::ptr::null(),
+                0,
+                &mut data_out,
+            )
+        };
+        if result == 0 {
+            return Err("DPAPI 解密失败，凭据可能由其他 Windows 用户或系统加密".to_string());
+        }
+        let decrypted = unsafe {
+            std::slice::from_raw_parts(data_out.pb_data, data_out.cb_data as usize).to_vec()
+        };
+        unsafe {
+            LocalFree(data_out.pb_data as isize);
+        }
+        Ok(decrypted)
+    }
+
+    fn hex_encode(data: &[u8]) -> String {
+        data.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
+        if hex.len() % 2 != 0 {
+            return Err("十六进制编码长度无效".to_string());
+        }
+        (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).map_err(|e| format!("十六进制解码失败：{e}")))
+            .collect()
+    }
+
+    fn encrypt_credential(plain: &str) -> String {
+        match dpapi_encrypt(plain.as_bytes()) {
+            Ok(encrypted) => format!("enc1:{}", hex_encode(&encrypted)),
+            Err(_) => {
+                log::warn!("DPAPI 加密失败，将明文保存凭据");
+                plain.to_string()
+            }
+        }
+    }
+
+    fn decrypt_credential(stored: &str) -> Result<String, String> {
+        if let Some(hex) = stored.strip_prefix("enc1:") {
+            let encrypted = hex_decode(hex)?;
+            let decrypted = dpapi_decrypt(&encrypted)?;
+            String::from_utf8(decrypted).map_err(|e| format!("解密凭据失败：{e}"))
+        } else {
+            Ok(stored.to_string())
+        }
+    }
+
+    #[derive(Clone, Debug, Default, Deserialize, Serialize)]
     struct StoredConfig {
         api_key: Option<String>,
         #[serde(default)]
@@ -63,6 +196,12 @@ pub fn run() {
         let text = fs::read_to_string(&path).map_err(|error| error.to_string())?;
         let mut config: StoredConfig =
             serde_json::from_str(&text).map_err(|error| error.to_string())?;
+        if let Some(ref key) = config.api_key {
+            config.api_key = Some(decrypt_credential(key)?);
+        }
+        if let Some(ref token) = config.usage_token {
+            config.usage_token = Some(decrypt_credential(token)?);
+        }
         config.refresh_interval_seconds =
             normalize_refresh_interval_seconds(config.refresh_interval_seconds);
         Ok(config)
@@ -76,12 +215,17 @@ pub fn run() {
     }
 
     fn write_stored_config(config: &StoredConfig) -> Result<(), String> {
+        let encrypted_config = StoredConfig {
+            api_key: config.api_key.as_ref().map(|k| encrypt_credential(k)),
+            usage_token: config.usage_token.as_ref().map(|t| encrypt_credential(t)),
+            ..config.clone()
+        };
         let path = config_path()?;
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).map_err(|error| error.to_string())?;
         }
 
-        let text = serde_json::to_string_pretty(config).map_err(|error| error.to_string())?;
+        let text = serde_json::to_string_pretty(&encrypted_config).map_err(|error| error.to_string())?;
         fs::write(path, text).map_err(|error| error.to_string())
     }
 
@@ -174,6 +318,12 @@ pub fn run() {
         let value = api_key.trim().to_string();
         if value.is_empty() {
             return Err("API Key 不能为空".to_string());
+        }
+        if value.len() > 256 {
+            return Err("API Key 长度超出限制".to_string());
+        }
+        if !value.starts_with("sk-") {
+            log::warn!("API Key 格式异常：不以 sk- 开头");
         }
 
         let mut config = read_stored_config()?;
@@ -319,6 +469,9 @@ pub fn run() {
         let value = usage_token.trim().to_string();
         if value.is_empty() {
             return Err("用量 Token 不能为空".to_string());
+        }
+        if value.len() > 4096 {
+            return Err("用量 Token 长度超出限制".to_string());
         }
         let mut config = read_stored_config()?;
         config.usage_token = Some(value);
@@ -506,7 +659,14 @@ pub fn run() {
       if (window.__dsm_token_hook__) return;
       window.__dsm_token_hook__ = true;
       var done = false;
-      var pending = false;
+      var ALLOWED_HOSTS = ['platform.deepseek.com', 'api.deepseek.com'];
+
+      function isAllowedHost(url) {
+        try {
+          var u = new URL(url, window.location.href);
+          return ALLOWED_HOSTS.indexOf(u.hostname) !== -1;
+        } catch (e) { return false; }
+      }
 
       function deliver(token) {
         if (done) return;
@@ -516,18 +676,7 @@ pub fn run() {
         var now = new Date();
         var y = now.getFullYear();
         var m = now.getMonth() + 1;
-        // 主通道：写入 document.title，原生侧 window.title() 读取。
-        // 外部网站窗口默认不注入 __TAURI__，此通道不依赖它，最可靠。
         try { document.title = 'DSM_USAGE_TOKEN:' + y + ':' + m + ':' + token; } catch (e) {}
-        // 辅通道：若本窗口恰好可用 __TAURI__，直接上报更快
-        try {
-          if (!pending && window.__TAURI__ && window.__TAURI__.core) {
-            pending = true;
-            window.__TAURI__.core.invoke('usage_token_captured', {
-              token: token, month: m, year: y
-            }).then(function() { done = true; }).catch(function() { pending = false; });
-          }
-        } catch (e) {}
       }
 
       function fromAuth(value) {
@@ -540,19 +689,24 @@ pub fn run() {
       if (typeof origFetch === 'function') {
         window.fetch = function(input, init) {
           try {
-            var headers = (init && init.headers) || (input && input.headers);
-            if (headers) {
-              if (typeof Headers !== 'undefined' && headers instanceof Headers) {
-                fromAuth(headers.get('authorization'));
-              } else if (Array.isArray(headers)) {
-                for (var i = 0; i < headers.length; i++) {
-                  if (headers[i] && String(headers[i][0]).toLowerCase() === 'authorization') {
-                    fromAuth(headers[i][1]);
+            var requestUrl = (typeof input === 'string') ? input :
+                             (input && typeof input.url === 'string') ? input.url : '';
+            if (init && typeof init.url === 'string') requestUrl = init.url;
+            if (isAllowedHost(requestUrl)) {
+              var headers = (init && init.headers) || (input && input.headers);
+              if (headers) {
+                if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+                  fromAuth(headers.get('authorization'));
+                } else if (Array.isArray(headers)) {
+                  for (var i = 0; i < headers.length; i++) {
+                    if (headers[i] && String(headers[i][0]).toLowerCase() === 'authorization') {
+                      fromAuth(headers[i][1]);
+                    }
                   }
-                }
-              } else if (typeof headers === 'object') {
-                for (var k in headers) {
-                  if (k.toLowerCase() === 'authorization') fromAuth(headers[k]);
+                } else if (typeof headers === 'object') {
+                  for (var k in headers) {
+                    if (k.toLowerCase() === 'authorization') fromAuth(headers[k]);
+                  }
                 }
               }
             }
@@ -564,9 +718,17 @@ pub fn run() {
       var origSet = XMLHttpRequest.prototype.setRequestHeader;
       XMLHttpRequest.prototype.setRequestHeader = function(name, value) {
         try {
-          if (name && String(name).toLowerCase() === 'authorization') fromAuth(value);
+          if (name && String(name).toLowerCase() === 'authorization' && isAllowedHost(this._dsmUrl || '')) {
+            fromAuth(value);
+          }
         } catch (e) {}
         return origSet.apply(this, arguments);
+      };
+
+      var origOpen = XMLHttpRequest.prototype.open;
+      XMLHttpRequest.prototype.open = function(method, url) {
+        try { this._dsmUrl = url; } catch (e) {}
+        return origOpen.apply(this, arguments);
       };
     })();
     "#;
@@ -606,6 +768,10 @@ pub fn run() {
         .center()
         .visible(true)
         .initialization_script(USAGE_SYNC_POLL_JS)
+        .on_navigation(|url| {
+            url.host_str()
+                .is_some_and(|host| host == "platform.deepseek.com" || host == "api.deepseek.com")
+        })
         .on_page_load(|window, payload| {
             if matches!(payload.event(), PageLoadEvent::Finished)
                 && payload
@@ -613,7 +779,6 @@ pub fn run() {
                     .host_str()
                     .is_some_and(|host| host == "platform.deepseek.com")
             {
-                // 双保险：万一 initialization_script 未注入，页面加载完再装一次 hook
                 let _ = window.eval(USAGE_SYNC_POLL_JS);
             }
         })
