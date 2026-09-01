@@ -59,9 +59,9 @@ DeepSeek Monitor Windows is a Windows desktop adaptation inspired by JayHome137/
 
 ## 下载安装
 
-普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.1.0_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
+普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.0_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
 
-安装包 SHA256：`B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`。
+安装包 SHA256：构建 1.2.0 后于 GitHub Release 安装包资产中更新（见发布页）。
 
 运行环境要求：
 
@@ -204,12 +204,17 @@ Rust 后端依赖：
 
 完整发布记录见 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases)。
 
+### v1.2.0
+
+- 新增 `deepseek-v4-flash-vision-exp`（V4 Flash Vision）模型的用量监控：仪表盘新增第三个模型行（置于 V4 Flash 与 V4 Pro 之间），缓存命中趋势图合并该模型的命中/未命中/输出 Token，模型详情页支持查看其按日消耗。
+- 版本号升至 1.2.0。
+
 ### v1.1.0
 
 - 支持缓存命中、缓存未命中与输出 Token 的明细显示。
 - 增加亮色 UI 皮肤，支持在主面板一键切换并记住用户选择。
 - 设置页增加当前版本号显示。
-- 当前 GitHub Release `v1.1.0` 已标记为 Latest，安装包为 `DeepSeekMonitorWindows_1.1.0_x64-setup.exe`。
+- GitHub Release `v1.1.0` 曾标记为 Latest，安装包为 `DeepSeekMonitorWindows_1.1.0_x64-setup.exe`（历史保留）。
 - 安装包 SHA256：`B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`。
 - 历史 Release `v1.0.1` 和旧安装包继续保留，便于回退和版本追溯。
 

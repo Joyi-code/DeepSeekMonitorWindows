@@ -7,6 +7,7 @@
   --brand-light: #6b85ff;
   --flash: #4091ff;
   --pro: #da38f0;
+  --vision: #ff5d73;
   --orange: #ff9c2b;
   --skin-accent: #e0a838;
   --panel-bg: rgba(105, 86, 38, 0.82);
@@ -70,6 +71,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 9px;
+  overflow-y: auto;
 }
 
 .panel-header {
@@ -287,6 +289,10 @@ button {
   color: #c98bff;
 }
 
+.cache-hit-rate.vision {
+  color: #ff7a8f;
+}
+
 .model-badge {
   display: grid;
   place-items: center;
@@ -309,6 +315,11 @@ button {
 .model-badge.pro {
   background: rgba(218, 56, 240, 0.16);
   color: var(--pro);
+}
+
+.model-badge.vision {
+  background: rgba(255, 93, 115, 0.15);
+  color: var(--vision);
 }
 
 .usage-main {
@@ -361,6 +372,10 @@ button {
 
 .pro-fill {
   background: linear-gradient(90deg, #d93ff2, #7463d7);
+}
+
+.vision-fill {
+  background: linear-gradient(90deg, #ff5d73, #ff8fab);
 }
 
 .usage-price {
@@ -835,6 +850,10 @@ button:disabled {
   color: var(--pro);
 }
 
+.vision {
+  color: var(--vision);
+}
+
 .detail-chart {
   flex: 1;
   min-height: 0;
@@ -1100,6 +1119,7 @@ button:disabled {
   --brand-light: #4d84ff;
   --flash: #2d7ff5;
   --pro: #c02fde;
+  --vision: #e23e5e;
   --orange: #ef8400;
   --skin-accent: #2d6cf6;
 }
@@ -1160,11 +1180,19 @@ button:disabled {
   color: #9333ea;
 }
 
+[data-theme="light"] .cache-hit-rate.vision {
+  color: #d6336c;
+}
+
 [data-theme="light"] .model-badge.flash {
   background: rgba(45, 127, 245, 0.18);
 }
 [data-theme="light"] .model-badge.pro {
   background: rgba(192, 47, 222, 0.18);
+}
+
+[data-theme="light"] .model-badge.vision {
+  background: rgba(226, 62, 94, 0.16);
 }
 
 [data-theme="light"] .progress-track {
