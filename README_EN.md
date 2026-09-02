@@ -55,9 +55,9 @@ Douyin: 像素与咖啡时光
 
 ## Download and Install
 
-Users can download and run `DeepSeekMonitorWindows_1.1.0_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
+Users can download and run `DeepSeekMonitorWindows_1.2.0_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
 
-Installer SHA256: `B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`.
+Installer SHA256: generated and published together with the 1.2.0 installer on GitHub Releases.
 
 Runtime requirements:
 
@@ -202,12 +202,17 @@ Rust backend dependencies:
 
 See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases) for the complete release history.
 
+### v1.2.0
+
+- Added usage monitoring for the `deepseek-v4-flash-vision-exp` (V4 Flash Vision) model: a new third model row on the dashboard (placed between V4 Flash and V4 Pro), the cache-hit trend chart now merges this model's hit/miss/output tokens, and the model detail page shows its daily usage.
+- Bumped the version to 1.2.0.
+
 ### v1.1.0
 
 - Added detailed cache hit, cache miss, and output token statistics.
 - Added a light UI theme that can be toggled from the dashboard and persists across sessions.
 - Added the current version number to the Settings page.
-- GitHub Release `v1.1.0` is marked as Latest. The installer is `DeepSeekMonitorWindows_1.1.0_x64-setup.exe`.
+- GitHub Release `v1.1.0` was marked as Latest. The installer is `DeepSeekMonitorWindows_1.1.0_x64-setup.exe` (kept for history).
 - Installer SHA256: `B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`.
 - The historical `v1.0.1` release and its installer remain available for rollback and version tracking.
 

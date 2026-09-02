@@ -7,6 +7,7 @@
   --brand-light: #6b85ff;
   --flash: #4091ff;
   --pro: #da38f0;
+  --vision: #ff5d73;
   --orange: #ff9c2b;
   --skin-accent: #e0a838;
   --panel-bg: rgba(105, 86, 38, 0.82);
@@ -19,6 +20,7 @@
 
 * {
   box-sizing: border-box;
+  scroll-behavior: auto;
 }
 
 html,
@@ -41,8 +43,6 @@ button {
 .stage {
   width: 100vw;
   height: 100vh;
-  display: grid;
-  place-items: start center;
   overflow: hidden;
   background: transparent;
 }
@@ -59,17 +59,19 @@ button {
 }
 
 .panel {
-  width: min(356px, 100vw);
-  height: min(600px, 100vh);
+  width: 100%;
+  height: 100%;
   border-radius: 22px;
-  padding: 0 16px 16px;
+  padding: 0 clamp(10px, 2.4vw, 18px) clamp(10px, 2.4vh, 18px);
   overflow: hidden;
 }
 
 .dashboard-panel {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: clamp(6px, 1.4vh, 10px);
+  min-height: 0;
+  overflow: hidden;
 }
 
 .panel-header {
@@ -78,6 +80,7 @@ button {
   justify-content: space-between;
   padding-top: 18px;
   margin-bottom: 2px;
+  flex: 0 0 auto;
 }
 
 .title-lockup {
@@ -146,6 +149,7 @@ button {
 }
 
 .balance-card {
+  flex: 0 0 auto;
   padding: 13px 14px 13px;
 }
 
@@ -194,7 +198,7 @@ button {
 
 .balance-amount {
   margin-top: 14px;
-  font-size: 32px;
+  font-size: clamp(22px, 5.6vw, 34px);
   line-height: 1;
   font-weight: 900;
   color: #6570ff;
@@ -202,7 +206,7 @@ button {
 }
 
 .balance-amount.balance-dim {
-  font-size: 22px;
+  font-size: clamp(18px, 4vw, 24px);
   color: rgba(var(--fg), 0.6);
 }
 
@@ -257,12 +261,13 @@ button {
 .usage-stack {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: clamp(5px, 1vh, 7px);
+  flex: 0 0 auto;
 }
 
 .usage-row {
   width: 100%;
-  min-height: 64px;
+  min-height: clamp(54px, 9.5vh, 66px);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -287,6 +292,10 @@ button {
   color: #c98bff;
 }
 
+.cache-hit-rate.vision {
+  color: #ff7a8f;
+}
+
 .model-badge {
   display: grid;
   place-items: center;
@@ -309,6 +318,11 @@ button {
 .model-badge.pro {
   background: rgba(218, 56, 240, 0.16);
   color: var(--pro);
+}
+
+.model-badge.vision {
+  background: rgba(255, 93, 115, 0.15);
+  color: var(--vision);
 }
 
 .usage-main {
@@ -363,6 +377,10 @@ button {
   background: linear-gradient(90deg, #d93ff2, #7463d7);
 }
 
+.vision-fill {
+  background: linear-gradient(90deg, #ff5d73, #ff8fab);
+}
+
 .usage-price {
   width: 55px;
   text-align: right;
@@ -385,8 +403,8 @@ button {
 .chart-card {
   flex: 1 1 auto;
   height: auto;
-  min-height: 142px;
-  padding: 12px 14px 14px;
+  min-height: clamp(120px, 24vh, 220px);
+  padding: clamp(10px, 1.8vh, 14px) clamp(10px, 2vw, 16px) clamp(10px, 2vh, 16px);
   display: flex;
   flex-direction: column;
   overflow: visible; /* 让 hover 弹窗可溢出卡片显示 */
@@ -433,7 +451,7 @@ button {
 
 .bar-value {
   color: rgba(var(--fg), 0.72);
-  font-size: 7px;
+  font-size: clamp(6px, 1.5vw, 10px);
   font-weight: 800;
 }
 
@@ -482,13 +500,13 @@ button {
 
 .bar-day {
   color: var(--text-faint);
-  font-size: 9px;
+  font-size: clamp(8px, 1.6vw, 11px);
   font-weight: 800;
 }
 
 .settings-panel {
-  width: min(420px, 100vw);
-  height: min(620px, 100vh);
+  width: 100%;
+  height: 100%;
   border-radius: 22px;
   overflow: hidden;
 }
@@ -497,18 +515,9 @@ button {
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 20px;
-  scrollbar-color: rgba(var(--fg), 0.38) transparent;
-  scrollbar-width: thin;
-}
-
-.settings-inner::-webkit-scrollbar {
-  width: 6px;
-}
-
-.settings-inner::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(var(--fg), 0.38);
+  padding: clamp(16px, 3vh, 24px) clamp(14px, 3vw, 22px);
+  scroll-behavior: auto;
+  -webkit-overflow-scrolling: auto;
 }
 
 .settings-header {
@@ -757,10 +766,11 @@ button:disabled {
 }
 
 .detail-panel {
-  padding: 16px;
+  padding: clamp(12px, 2.6vw, 18px);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: clamp(8px, 1.6vh, 14px);
+  min-height: 0;
 }
 
 .floating-close {
@@ -775,12 +785,13 @@ button:disabled {
 }
 
 .detail-hero {
-  margin-top: 26px;
-  min-height: 82px;
+  margin-top: clamp(18px, 4vh, 28px);
+  min-height: clamp(70px, 12vh, 88px);
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
+  padding: clamp(12px, 2.2vw, 16px) clamp(14px, 3vw, 20px);
   border-radius: 18px;
 }
 
@@ -800,13 +811,15 @@ button:disabled {
 .detail-metrics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: clamp(8px, 1.6vh, 12px);
+  flex: 0 0 auto;
 }
 
 .metric-card {
-  min-height: 78px;
+  min-height: clamp(64px, 11vh, 84px);
   border-radius: 18px;
   padding: 14px 16px;
+  flex: 0 0 auto;
 }
 
 .metric-card span {
@@ -835,13 +848,17 @@ button:disabled {
   color: var(--pro);
 }
 
+.vision {
+  color: var(--vision);
+}
+
 .detail-chart {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   border-radius: 18px;
-  padding: 14px 18px 16px;
+  padding: clamp(12px, 2vh, 16px) clamp(14px, 3vw, 20px) clamp(12px, 2.2vh, 18px);
   background: linear-gradient(180deg, rgba(26, 50, 21, 0.58), rgba(34, 41, 17, 0.62));
 }
 
@@ -1100,6 +1117,7 @@ button:disabled {
   --brand-light: #4d84ff;
   --flash: #2d7ff5;
   --pro: #c02fde;
+  --vision: #e23e5e;
   --orange: #ef8400;
   --skin-accent: #2d6cf6;
 }
@@ -1160,11 +1178,19 @@ button:disabled {
   color: #9333ea;
 }
 
+[data-theme="light"] .cache-hit-rate.vision {
+  color: #d6336c;
+}
+
 [data-theme="light"] .model-badge.flash {
   background: rgba(45, 127, 245, 0.18);
 }
 [data-theme="light"] .model-badge.pro {
   background: rgba(192, 47, 222, 0.18);
+}
+
+[data-theme="light"] .model-badge.vision {
+  background: rgba(226, 62, 94, 0.16);
 }
 
 [data-theme="light"] .progress-track {

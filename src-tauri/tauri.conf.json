@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "DeepSeekMonitorWindows",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "identifier": "com.deepseek.monitor.windows",
   "build": {
     "frontendDist": "../dist",
@@ -15,9 +15,11 @@
       {
         "label": "main",
         "title": "DeepSeek Monitor Windows",
-        "width": 356,
-        "height": 600,
-        "resizable": false,
+        "width": 384,
+        "height": 660,
+        "minWidth": 340,
+        "minHeight": 540,
+        "resizable": true,
         "fullscreen": false,
         "decorations": false,
         "transparent": true,

@@ -665,6 +665,10 @@ pub fn run() {
         pro_cache_hit: u64,
         pro_cache_miss: u64,
         pro_response: u64,
+        vision_tokens: u64,
+        vision_cache_hit: u64,
+        vision_cache_miss: u64,
+        vision_response: u64,
         total_tokens: u64,
         total_cost: f64,
     }
@@ -817,6 +821,7 @@ pub fn run() {
             let label = match model_usage.model.as_str() {
                 "deepseek-v4-flash" => Some(("flash", "V4 Flash")),
                 "deepseek-v4-pro" => Some(("pro", "V4 Pro")),
+                "deepseek-v4-flash-vision-exp" => Some(("flashvision", "V4 Flash Vision")),
                 _ => None,
             };
             if let Some((key, name)) = label {
@@ -853,6 +858,10 @@ pub fn run() {
             let mut pro_hit = 0u64;
             let mut pro_miss = 0u64;
             let mut pro_resp = 0u64;
+            let mut vision = 0u64;
+            let mut vision_hit = 0u64;
+            let mut vision_miss = 0u64;
+            let mut vision_resp = 0u64;
             let mut total = 0u64;
             for model_usage in &day.data {
                 let (tokens, _, hit, miss, response) = token_breakdown(&model_usage.usage);
@@ -870,6 +879,12 @@ pub fn run() {
                         pro_miss += miss;
                         pro_resp += response;
                     }
+                    "deepseek-v4-flash-vision-exp" => {
+                        vision += tokens;
+                        vision_hit += hit;
+                        vision_miss += miss;
+                        vision_resp += response;
+                    }
                     _ => {}
                 }
             }
@@ -883,6 +898,10 @@ pub fn run() {
                 pro_cache_hit: pro_hit,
                 pro_cache_miss: pro_miss,
                 pro_response: pro_resp,
+                vision_tokens: vision,
+                vision_cache_hit: vision_hit,
+                vision_cache_miss: vision_miss,
+                vision_response: vision_resp,
                 total_tokens: total,
                 total_cost: cost_by_date.get(&day.date).copied().unwrap_or(0.0),
             });
