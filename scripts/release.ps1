@@ -61,7 +61,13 @@ $latest = [ordered]@{
   }
 }
 $latestPath = Join-Path $bundleDir "latest.json"
-$latest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $latestPath -Encoding utf8
+$json = $latest | ConvertTo-Json -Depth 6
+# 必须写成不带 BOM 的 UTF-8：updater 用 serde_json 解析，带 BOM 会直接报错。
+[System.IO.File]::WriteAllText($latestPath, $json, (New-Object System.Text.UTF8Encoding($false)))
+$firstByte = [System.IO.File]::ReadAllBytes($latestPath)[0]
+if ($firstByte -ne 123) {
+  throw "latest.json 写入异常：首个字节不是 {，请检查编码"
+}
 
 $hash = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash
 

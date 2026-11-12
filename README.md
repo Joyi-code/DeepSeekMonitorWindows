@@ -61,9 +61,9 @@ DeepSeek Monitor Windows is a Windows desktop adaptation inspired by JayHome137/
 
 ## 下载安装
 
-普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.1.0_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
+普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.1_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
 
-安装包 SHA256：`B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`。
+安装包 SHA256：`40105BA56F277A51FDC0112E5C0795AA4E9D7F9191C15EC138C234BD4EF757CB`。
 
 运行环境要求：
 
@@ -205,6 +205,13 @@ Rust 后端依赖：
 ## 更新日志
 
 完整发布记录见 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases)。
+
+### v1.2.1
+
+- 更新检查加 30 秒超时，下载加 3 分钟超时；网络卡住不会一直停在「正在下载」。
+- 手动检查失败统一提示「网络不可达，请稍后重试」。
+- 自动检查间隔由 6 小时改为 24 小时，设置 → 关于新增「上次检查」时间。
+- 修复 `latest.json` 带 BOM 导致客户端解析失败的问题。
 
 ### v1.2.0
 

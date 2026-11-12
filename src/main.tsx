@@ -187,6 +187,7 @@ function App() {
   const [updateError, setUpdateError] = React.useState("");
   const [updateProgress, setUpdateProgress] = React.useState<UpdateProgress | null>(null);
   const [updateBadgeVisible, setUpdateBadgeVisible] = React.useState(false);
+  const [lastCheckAt, setLastCheckAt] = React.useState<Date | null>(null);
   const pendingUpdate = React.useRef<Update | null>(null);
 
   const checkForUpdate = React.useCallback(async (manual: boolean) => {
@@ -195,7 +196,8 @@ function App() {
       setUpdateError("");
     }
     try {
-      const update = await check();
+      // GitHub 在国内可能不可达，显式给 30 秒超时，避免后台任务长时间挂起。
+      const update = await check({ timeout: 30_000 });
       if (!update) {
         pendingUpdate.current = null;
         setUpdateVersion(null);
@@ -210,17 +212,20 @@ function App() {
       setUpdateBadgeVisible(localStorage.getItem("update-seen-version") !== update.version);
     } catch (error) {
       pendingUpdate.current = null;
-      // 静默检查失败不打扰用户；手动检查才显示原因。
+      // 静默检查失败不打扰用户；手动检查只说网络不可达，不给外链。
       if (manual) {
-        setUpdateError(typeof error === "string" ? error : "检查更新失败，请检查网络后重试");
+        setUpdateError("网络不可达，请稍后重试");
         setUpdateStatus("error");
       }
+    } finally {
+      setLastCheckAt(new Date());
     }
   }, []);
 
   React.useEffect(() => {
     void checkForUpdate(false);
-    const timer = window.setInterval(() => void checkForUpdate(false), 6 * 60 * 60 * 1000);
+    // 每 24 小时查一次即可；启动时已经查过一次。
+    const timer = window.setInterval(() => void checkForUpdate(false), 24 * 60 * 60 * 1000);
     return () => window.clearInterval(timer);
   }, [checkForUpdate]);
 
@@ -233,21 +238,25 @@ function App() {
     setUpdateError("");
     setUpdateProgress({ downloaded: 0, total: null });
     try {
-      await update.downloadAndInstall((event) => {
-        if (event.event === "Started") {
-          setUpdateProgress({ downloaded: 0, total: event.data.contentLength ?? null });
-        } else if (event.event === "Progress") {
-          setUpdateProgress((prev) => ({
-            downloaded: (prev?.downloaded ?? 0) + event.data.chunkLength,
-            total: prev?.total ?? null,
-          }));
-        } else if (event.event === "Finished") {
-          setUpdateStatus("installing");
-        }
-      });
+      await update.downloadAndInstall(
+        (event) => {
+          if (event.event === "Started") {
+            setUpdateProgress({ downloaded: 0, total: event.data.contentLength ?? null });
+          } else if (event.event === "Progress") {
+            setUpdateProgress((prev) => ({
+              downloaded: (prev?.downloaded ?? 0) + event.data.chunkLength,
+              total: prev?.total ?? null,
+            }));
+          } else if (event.event === "Finished") {
+            setUpdateStatus("installing");
+          }
+        },
+        // 下载阶段给 3 分钟上限；网络卡住时请求会超时失败，不会一直停在「正在下载」。
+        { timeout: 180_000 },
+      );
       await relaunch();
     } catch (error) {
-      setUpdateError(typeof error === "string" ? error : "更新失败，请稍后重试");
+      setUpdateError("下载失败，请检查网络后重试");
       setUpdateStatus("error");
     }
   }, []);
@@ -397,6 +406,7 @@ function App() {
           updateVersion={updateVersion}
           updateError={updateError}
           updateProgress={updateProgress}
+          lastCheckAt={lastCheckAt}
           onCheckUpdate={() => void checkForUpdate(true)}
           onInstallUpdate={() => void installUpdate()}
           onBack={() => setView("dashboard")}
@@ -983,6 +993,7 @@ function SettingsPanel({
   updateVersion,
   updateError,
   updateProgress,
+  lastCheckAt,
   onCheckUpdate,
   onInstallUpdate,
 }: {
@@ -995,6 +1006,7 @@ function SettingsPanel({
   updateVersion: string | null;
   updateError: string;
   updateProgress: UpdateProgress | null;
+  lastCheckAt: Date | null;
   onCheckUpdate: () => void;
   onInstallUpdate: () => void;
 }) {
@@ -1351,6 +1363,14 @@ function SettingsPanel({
                 : updateStatus === "current"
                   ? `v${appVersion}`
                   : "—"}
+            </strong>
+          </div>
+          <div className="version-row">
+            <span>上次检查</span>
+            <strong>
+              {lastCheckAt
+                ? lastCheckAt.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
+                : "尚未检查"}
             </strong>
           </div>
 

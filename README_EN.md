@@ -57,9 +57,9 @@ Douyin: 像素与咖啡时光
 
 ## Download and Install
 
-Users can download and run `DeepSeekMonitorWindows_1.1.0_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
+Users can download and run `DeepSeekMonitorWindows_1.2.1_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
 
-Installer SHA256: `B13EF28BB7E803D923E1A00BCE4A873B4EB7F2F592AFF690173C2E9291F1D13F`.
+Installer SHA256: `40105BA56F277A51FDC0112E5C0795AA4E9D7F9191C15EC138C234BD4EF757CB`.
 
 Runtime requirements:
 
@@ -203,6 +203,13 @@ Rust backend dependencies:
 ## Changelog
 
 See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases) for the complete release history.
+
+### v1.2.1
+
+- Added a 30-second timeout for update checks and a 3-minute timeout for downloads.
+- Manual check failures now show a single "network unreachable" message.
+- The automatic check interval is now 24 hours; Settings → About shows the last check time.
+- Fixed `latest.json` being written with a UTF-8 BOM, which broke parsing.
 
 ### v1.2.0
 
