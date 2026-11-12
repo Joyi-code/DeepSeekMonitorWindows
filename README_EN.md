@@ -57,9 +57,9 @@ Douyin: 像素与咖啡时光
 
 ## Download and Install
 
-Users can download and run `DeepSeekMonitorWindows_1.2.2_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
+Users can download and run `DeepSeekMonitorWindows_1.2.3_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
 
-Installer SHA256: `D237FA9A2F464FF2D5FF61593CB4EF2766995E1A2581B33873587F2AFDA9D073`.
+Installer SHA256: `3148178ABB80AA5DB02136CB1298C12E7F36EEEF43D94A14BB826A525C26FC99`.
 
 Runtime requirements:
 
@@ -203,6 +203,10 @@ Rust backend dependencies:
 ## Changelog
 
 See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases) for the complete release history.
+
+### v1.2.3
+
+- The "vX available" pill on the balance card now stays visible until the update is installed.
 
 ### v1.2.2
 

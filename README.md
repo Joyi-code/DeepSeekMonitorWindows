@@ -61,9 +61,9 @@ DeepSeek Monitor Windows is a Windows desktop adaptation inspired by JayHome137/
 
 ## 下载安装
 
-普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.2_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
+普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.3_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
 
-安装包 SHA256：`D237FA9A2F464FF2D5FF61593CB4EF2766995E1A2581B33873587F2AFDA9D073`。
+安装包 SHA256：`3148178ABB80AA5DB02136CB1298C12E7F36EEEF43D94A14BB826A525C26FC99`。
 
 运行环境要求：
 
@@ -205,6 +205,10 @@ Rust 后端依赖：
 ## 更新日志
 
 完整发布记录见 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases)。
+
+### v1.2.3
+
+- 有新版本时，余额卡的「vX 可更新」提示会一直显示，直到更新完成，不再因为进过设置就消失。
 
 ### v1.2.2
 
