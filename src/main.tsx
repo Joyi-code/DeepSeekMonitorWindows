@@ -105,6 +105,11 @@ const todayStr = () => {
 };
 const dateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+/** 完整日期时间：2026-11-12 18:31，用于「上次检查」这类时间戳。 */
+const fmtDateTime = (date: Date) => {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${dateKey(date)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 const addDays = (date: Date, offset: number) => {
   const next = new Date(date);
   next.setDate(next.getDate() + offset);
@@ -1021,7 +1026,7 @@ function SettingsPanel({
   const [usageStatus, setUsageStatus] = React.useState("");
   const [usageSyncing, setUsageSyncing] = React.useState(false);
   const [showManualPaste, setShowManualPaste] = React.useState(false);
-  const [appVersion, setAppVersion] = React.useState("1.2.0");
+  const [appVersion, setAppVersion] = React.useState("1.2.2");
   const configPath = config?.configPath ?? "%APPDATA%\\DeepSeekMonitorWindows\\config.json";
 
   React.useEffect(() => {
@@ -1042,7 +1047,7 @@ function SettingsPanel({
   React.useEffect(() => {
     void getVersion()
       .then(setAppVersion)
-      .catch(() => setAppVersion("1.2.0"));
+      .catch(() => setAppVersion("1.2.2"));
   }, []);
 
   const refreshUsageAfterToken = React.useCallback(
@@ -1367,11 +1372,7 @@ function SettingsPanel({
           </div>
           <div className="version-row">
             <span>上次检查</span>
-            <strong>
-              {lastCheckAt
-                ? lastCheckAt.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })
-                : "尚未检查"}
-            </strong>
+            <strong>{lastCheckAt ? fmtDateTime(lastCheckAt) : "尚未检查"}</strong>
           </div>
 
           {updateStatus === "available" && updateVersion ? (

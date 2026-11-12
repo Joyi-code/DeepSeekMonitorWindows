@@ -61,9 +61,9 @@ DeepSeek Monitor Windows is a Windows desktop adaptation inspired by JayHome137/
 
 ## 下载安装
 
-普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.1_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
+普通用户可从 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest) 下载并运行 `DeepSeekMonitorWindows_1.2.2_x64-setup.exe`。覆盖安装新版本前无需卸载旧版本。
 
-安装包 SHA256：`40105BA56F277A51FDC0112E5C0795AA4E9D7F9191C15EC138C234BD4EF757CB`。
+安装包 SHA256：`D237FA9A2F464FF2D5FF61593CB4EF2766995E1A2581B33873587F2AFDA9D073`。
 
 运行环境要求：
 
@@ -205,6 +205,10 @@ Rust 后端依赖：
 ## 更新日志
 
 完整发布记录见 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases)。
+
+### v1.2.2
+
+- 设置 → 关于的「上次检查」改为显示完整日期时间（如 2026-11-12 18:31）。
 
 ### v1.2.1
 

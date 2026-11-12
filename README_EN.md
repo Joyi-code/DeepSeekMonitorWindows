@@ -57,9 +57,9 @@ Douyin: 像素与咖啡时光
 
 ## Download and Install
 
-Users can download and run `DeepSeekMonitorWindows_1.2.1_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
+Users can download and run `DeepSeekMonitorWindows_1.2.2_x64-setup.exe` from [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest). You do not need to uninstall an older version before installing an update.
 
-Installer SHA256: `40105BA56F277A51FDC0112E5C0795AA4E9D7F9191C15EC138C234BD4EF757CB`.
+Installer SHA256: `D237FA9A2F464FF2D5FF61593CB4EF2766995E1A2581B33873587F2AFDA9D073`.
 
 Runtime requirements:
 
@@ -203,6 +203,10 @@ Rust backend dependencies:
 ## Changelog
 
 See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases) for the complete release history.
+
+### v1.2.2
+
+- The "last checked" time in Settings → About now shows the full date and time.
 
 ### v1.2.1
 
