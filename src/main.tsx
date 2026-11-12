@@ -191,9 +191,10 @@ function App() {
   const [updateVersion, setUpdateVersion] = React.useState<string | null>(null);
   const [updateError, setUpdateError] = React.useState("");
   const [updateProgress, setUpdateProgress] = React.useState<UpdateProgress | null>(null);
-  const [updateBadgeVisible, setUpdateBadgeVisible] = React.useState(false);
   const [lastCheckAt, setLastCheckAt] = React.useState<Date | null>(null);
   const pendingUpdate = React.useRef<Update | null>(null);
+  // 有新版本就一直显示提示，直到用户更新或换成最新版本；不做“只看一次”的隐藏。
+  const updateAvailable = updateStatus === "available" && updateVersion !== null;
 
   const checkForUpdate = React.useCallback(async (manual: boolean) => {
     if (manual) {
@@ -207,14 +208,11 @@ function App() {
         pendingUpdate.current = null;
         setUpdateVersion(null);
         setUpdateStatus("current");
-        setUpdateBadgeVisible(false);
         return;
       }
       pendingUpdate.current = update;
       setUpdateVersion(update.version);
       setUpdateStatus("available");
-      // 同一个版本只提示一次：进过「关于」看过之后，徽标不再出现。
-      setUpdateBadgeVisible(localStorage.getItem("update-seen-version") !== update.version);
     } catch (error) {
       pendingUpdate.current = null;
       // 静默检查失败不打扰用户；手动检查只说网络不可达，不给外链。
@@ -268,11 +266,7 @@ function App() {
 
   const openSettings = React.useCallback(() => {
     setView("settings");
-    if (updateVersion) {
-      localStorage.setItem("update-seen-version", updateVersion);
-      setUpdateBadgeVisible(false);
-    }
-  }, [updateVersion]);
+  }, []);
   const [refreshIntervalSeconds, setRefreshIntervalSeconds] = React.useState(60);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = React.useState(false);
 
@@ -383,7 +377,7 @@ function App() {
           onRefresh={refreshAll}
           onClose={hideWindow}
           onSettings={openSettings}
-          updateAvailable={updateBadgeVisible}
+          updateAvailable={updateAvailable}
           updateVersion={updateVersion}
           onOpenUpdate={openSettings}
           onDetail={(nextModel) => {
@@ -1026,7 +1020,7 @@ function SettingsPanel({
   const [usageStatus, setUsageStatus] = React.useState("");
   const [usageSyncing, setUsageSyncing] = React.useState(false);
   const [showManualPaste, setShowManualPaste] = React.useState(false);
-  const [appVersion, setAppVersion] = React.useState("1.2.2");
+  const [appVersion, setAppVersion] = React.useState("1.2.3");
   const configPath = config?.configPath ?? "%APPDATA%\\DeepSeekMonitorWindows\\config.json";
 
   React.useEffect(() => {
@@ -1047,7 +1041,7 @@ function SettingsPanel({
   React.useEffect(() => {
     void getVersion()
       .then(setAppVersion)
-      .catch(() => setAppVersion("1.2.2"));
+      .catch(() => setAppVersion("1.2.3"));
   }, []);
 
   const refreshUsageAfterToken = React.useCallback(
