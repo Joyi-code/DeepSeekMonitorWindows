@@ -21,6 +21,8 @@
     "core:window:allow-set-focus",
     "core:event:allow-emit",
     "core:event:allow-listen",
-    "core:webview:allow-internal-toggle-devtools"
+    "core:webview:allow-internal-toggle-devtools",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

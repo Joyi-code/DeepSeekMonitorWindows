@@ -60,7 +60,8 @@ button {
 
 .panel {
   width: min(356px, 100vw);
-  height: min(600px, 100vh);
+  /* 窗口高度 670：比原来 600 多留 70px 给底部「每日消费」柱状图 */
+  height: min(670px, 100vh);
   border-radius: 22px;
   padding: 0 16px 16px;
   overflow: hidden;
@@ -183,6 +184,40 @@ button {
   color: #4df070;
   font-size: 12px;
   font-weight: 800;
+}
+
+/* 余额卡右上角：更新提示 + 账户状态并排 */
+.balance-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.update-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(255, 77, 79, 0.18);
+  color: #ff7a7a;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.update-pill:hover {
+  background: rgba(255, 77, 79, 0.28);
+}
+
+.update-pill i {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #ff4d4f;
 }
 
 .status-pill span {
@@ -398,6 +433,67 @@ button {
   font-weight: 800;
 }
 
+/* 图表右上角的维度切换：调用类型 / API Key */
+.chart-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(var(--fg), 0.1);
+}
+
+.chart-tab {
+  border: 0;
+  border-radius: 6px;
+  padding: 3px 8px;
+  background: transparent;
+  color: rgba(var(--fg), 0.62);
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chart-tab.selected {
+  background: rgba(var(--fg), 0.18);
+  color: rgba(var(--fg), 0.95);
+}
+
+.chart-tab:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chart-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.chart-sub-note {
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.bar-tooltip-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-tooltip-name em {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 10px;
+  color: rgba(var(--fg), 0.45);
+}
+
 .chart-placeholder {
   flex: 1 1 auto;
   min-height: 90px;
@@ -447,7 +543,7 @@ button {
 
 .cache-bar {
   width: 100%;
-  max-width: 30px;
+  max-width: 38px;
   display: flex;
   flex-direction: column-reverse; /* 命中在底，输出在顶 */
   border-radius: 4px;
@@ -488,7 +584,7 @@ button {
 
 .settings-panel {
   width: min(420px, 100vw);
-  height: min(620px, 100vh);
+  height: min(670px, 100vh);
   border-radius: 22px;
   overflow: hidden;
 }
@@ -582,6 +678,46 @@ button {
 .version-row strong {
   color: rgba(var(--fg), 0.94);
   font-size: 12px;
+}
+
+/* 关于页的更新操作 */
+.settings-action {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(var(--fg), 0.16);
+  color: rgba(var(--fg), 0.92);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.settings-action.primary {
+  background: var(--brand);
+  color: #fff;
+}
+
+.settings-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.update-progress {
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background: rgba(var(--fg), 0.16);
+  overflow: hidden;
+}
+
+.update-progress i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+  transition: width 0.2s ease;
 }
 
 .key-row {
@@ -901,7 +1037,7 @@ button:disabled {
 
 /* ---------- 堆叠柱 ---------- */
 .detail-bar-stacked {
-  width: 18px;
+  width: 34px;
   max-height: 100%;
   display: flex;
   flex-direction: column-reverse; /* 第一个子元素(命中)落在底部，输出落在顶部 */

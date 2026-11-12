@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "DeepSeekMonitorWindows",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "identifier": "com.deepseek.monitor.windows",
   "build": {
     "frontendDist": "../dist",
@@ -16,7 +16,7 @@
         "label": "main",
         "title": "DeepSeek Monitor Windows",
         "width": 356,
-        "height": 600,
+        "height": 670,
         "resizable": false,
         "fullscreen": false,
         "decorations": false,
@@ -32,6 +32,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -46,6 +47,17 @@
     },
     "android": {
       "debugApplicationIdSuffix": ".debug"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwQzZGOUZDRTkxRjlEMEQKUldRTm5SL3AvUG5Ha04rUGZuVGExcXAzSjhscngyNVR3VzJLa09xYTk2cUhuSjRDS0tFMkgyUXIK",
+      "endpoints": [
+        "https://github.com/Joyi-code/DeepSeekMonitorWindows/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

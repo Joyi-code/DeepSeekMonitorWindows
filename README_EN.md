@@ -36,11 +36,13 @@ Douyin: 像素与咖啡时光
 
 - Queries the DeepSeek API account balance through the official balance endpoint.
 - Retrieves DeepSeek platform usage data, including monthly spending, total model tokens, request count, cache hits, cache misses, and output tokens.
-- Displays usage for V4 Flash and V4 Pro.
+- Displays usage for V4.1 Flash and V4 Pro.
+- The daily trend chart switches between **Call type**, **API Key**, and **Cache hit** dimensions, stacking daily amounts or tokens; the API Key view shows the top five keys and merges the rest into "Other".
 - Provides a seven-day spending trend chart and model detail pages.
 - Adds a Windows system tray icon while keeping the main window off the taskbar by default.
 - Saves, clears, and validates the API key.
 - Supports automatic usage token retrieval with manual paste as a fallback.
+- Supports in-app updates: the app checks GitHub Releases quietly, shows a new-version pill on the balance card, and installs from Settings → About.
 - Adapts the visual design of the original macOS version to a Windows Tauri window.
 
 ## Relationship to the Original Project
@@ -201,6 +203,20 @@ Rust backend dependencies:
 ## Changelog
 
 See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases) for the complete release history.
+
+### v1.2.0
+
+- Replaced the dashboard cache-hit chart with a daily trend chart that switches between **Call type**, **API Key**, and **Cache hit**, with per-segment values in the hover card.
+- Model detail pages keep the three-part cache chart and add an **API Key** tab that splits that model's daily spending by key.
+- The API Key view shows the top five keys by spending and merges the rest into "Other"; key names include a masked suffix.
+- The dashboard window is now 670px tall, increasing the daily chart height by about 70px.
+- Added in-app updates: a new-version pill on the balance card and a one-click update in Settings → About; `scripts/release.ps1` builds the installer, signature, and `latest.json`.
+
+### v1.1.1
+
+- Fixed the Flash usage card showing no data after the platform renamed its model identifier to `deepseek-flash`.
+- Centralized model matching so `deepseek-flash`, `deepseek-v4-flash`, and `deepseek-chat` all map to the Flash card.
+- Renamed the Flash card and detail title to "V4.1 Flash".
 
 ### v1.1.0
 

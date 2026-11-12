@@ -40,11 +40,13 @@ DeepSeek Monitor Windows is a Windows desktop adaptation inspired by JayHome137/
 
 - 查询 DeepSeek API 账户余额，使用 DeepSeek 官方余额接口。
 - 查询 DeepSeek 平台用量数据，包括当月消费、模型 Token 总量、请求数、缓存命中、缓存未命中和输出 Token。
-- 支持 V4 Flash 与 V4 Pro 两类模型用量展示。
+- 支持 V4.1 Flash 与 V4 Pro 两类模型用量展示。
+- 主面板「每日趋势」图支持「调用类型 / API Key / 缓存命中」三种维度切换，按天堆叠金额或 Token；API Key 维度取消费前 5 名并合并「其他」。
 - 支持最近 7 天消费趋势图和模型详情页。
 - 支持 Windows 托盘入口，主窗口默认不进入任务栏。
 - 支持 API Key 保存、清除和余额验证。
 - 支持用量 Token 自动同步和手动粘贴兜底。
+- 支持应用内版本更新：启动时静默检查 GitHub Release，余额卡提示新版本，设置 → 关于可一键下载安装并重启。
 - UI 复用原 macOS 版本的视觉方向，并按 Windows Tauri 窗口做适配。
 
 ## 与原项目的关系
@@ -203,6 +205,21 @@ Rust 后端依赖：
 ## 更新日志
 
 完整发布记录见 [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releases)。
+
+### v1.2.0
+
+- 主面板底部图改为「每日趋势」，提供调用类型 / API Key / 缓存命中三个页签，按天堆叠金额或 Token，悬停显示分段明细。
+- 模型详情页保留「缓存命中」三段式图，并新增「API Key」页签，按 Key 拆分该模型的每日消费。
+- API Key 维度取区间消费前 5 名，其余合并为「其他」；Key 名称旁显示脱敏尾号。
+- 移除主面板「缓存命中明细」图；缓存命中改为第三个页签。
+- 主面板窗口高度调整为 670，底部柱状图比原来高约 1 倍。
+- 新增应用内版本更新：余额卡提示新版本，设置 → 关于可一键更新；发布用 `scripts/release.ps1` 生成安装包、签名和 `latest.json`。
+
+### v1.1.1
+
+- 修复平台把 Flash 模型标识改为 `deepseek-flash` 后，主面板 Flash 卡片取不到数据的问题。
+- 模型归类改为统一入口，兼容 `deepseek-flash`、`deepseek-v4-flash`、`deepseek-chat` 等历史标识。
+- 模型卡片与详情页标题改为「V4.1 Flash」。
 
 ### v1.1.0
 

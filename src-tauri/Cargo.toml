@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "1.1.0"
+version = "1.2.0"
 description = "DeepSeek Monitor Windows desktop app"
 authors = ["you"]
 license = "MIT"
@@ -25,3 +25,5 @@ tauri = { version = "2.11.2", features = ["tray-icon"] }
 tauri-plugin-log = "2"
 tauri-plugin-single-instance = "2"
 reqwest = { version = "0.12", features = ["json"] }
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"

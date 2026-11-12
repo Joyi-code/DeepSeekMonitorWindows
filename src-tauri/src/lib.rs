@@ -1,3 +1,126 @@
+/// 平台用量接口的模型标识 → 界面模型卡（key, 展示名）。
+///
+/// 平台标识会随版本变化：`deepseek-v4-flash` → `deepseek-flash`，历史数据里还出现过
+/// `deepseek-v4-flash-vision-exp`、`deepseek-v4.1-flash-expires-on-0910` 等带后缀的标识。
+/// 所以按 `deepseek-` 前缀加关键字归类，避免平台一改后缀，界面卡片就整行丢数。
+fn model_label(model: &str) -> Option<(&'static str, &'static str)> {
+    let normalized = model.trim().to_ascii_lowercase();
+    let head = normalized.strip_prefix("deepseek-")?;
+    if head.contains("flash") || head.contains("chat") {
+        return Some(("flash", "V4.1 Flash"));
+    }
+    if head.contains("pro") || head.contains("reasoner") {
+        return Some(("pro", "V4 Pro"));
+    }
+    None
+}
+
+/// 按 API Key 汇总后的单日金额。`time` 是该日零点的时间戳（秒）。
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyDayCost {
+    pub time: i64,
+    pub cost: f64,
+}
+
+/// 单个 API Key 在某个模型下的金额汇总。
+/// 首页会把同一 Key 的多个模型合并，模型详情页只取对应模型。
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiKeyCostSeries {
+    pub tracking_id: String,
+    pub name: String,
+    pub masked_key: String,
+    pub model: String,
+    pub total_cost: f64,
+    pub days: Vec<ApiKeyDayCost>,
+}
+
+/// 平台返回的「Key × 模型 × 天」金额拍平成一行，方便合并与单测。
+pub struct RawKeyCost {
+    pub tracking_id: String,
+    pub name: String,
+    pub masked_key: String,
+    pub model: String,
+    pub time: i64,
+    pub cost: f64,
+}
+
+/// 同一 Key、同一模型的多个天合并成一条序列，按区间总金额从大到小排序。
+pub fn summarize_key_costs(rows: Vec<RawKeyCost>) -> Vec<ApiKeyCostSeries> {
+    let mut order: Vec<(String, String)> = Vec::new();
+    let mut by_stream: std::collections::HashMap<(String, String), ApiKeyCostSeries> =
+        std::collections::HashMap::new();
+
+    for row in rows {
+        let group = (row.tracking_id.clone(), row.model.clone());
+        let entry = by_stream.entry(group.clone()).or_insert_with(|| {
+            order.push(group.clone());
+            ApiKeyCostSeries {
+                tracking_id: row.tracking_id.clone(),
+                name: row.name.clone(),
+                masked_key: row.masked_key.clone(),
+                model: row.model.clone(),
+                total_cost: 0.0,
+                days: Vec::new(),
+            }
+        });
+
+        entry.total_cost += row.cost;
+        match entry.days.iter_mut().find(|day| day.time == row.time) {
+            Some(day) => day.cost += row.cost,
+            None => entry.days.push(ApiKeyDayCost {
+                time: row.time,
+                cost: row.cost,
+            }),
+        }
+    }
+
+    let mut series: Vec<ApiKeyCostSeries> = order
+        .into_iter()
+        .filter_map(|group| by_stream.remove(&group))
+        .collect();
+
+    for item in &mut series {
+        item.days.sort_by_key(|day| day.time);
+    }
+    series.sort_by(|a, b| {
+        b.total_cost
+            .partial_cmp(&a.total_cost)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    series
+}
+
+/// 平台内部接口的通用 JSON 请求，处理 401/429/其它错误码。
+async fn get_platform_json<T: serde::de::DeserializeOwned>(
+    client: &reqwest::Client,
+    url: &str,
+    token: &str,
+) -> Result<T, String> {
+    let ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
+              (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
+    let resp = client
+        .get(url)
+        .bearer_auth(token)
+        .header("x-app-version", "1.0.0")
+        .header("Accept", "*/*")
+        .header("User-Agent", ua)
+        .timeout(std::time::Duration::from_secs(15))
+        .send()
+        .await
+        .map_err(|error| format!("用量请求失败：{error}"))?;
+    match resp.status().as_u16() {
+        200 => {}
+        401 => return Err("用量 Token 无效或已过期，请重新获取".to_string()),
+        429 => return Err("请求过于频繁，请稍后再试".to_string()),
+        code => return Err(format!("用量接口错误：HTTP {code}")),
+    }
+    resp.json::<T>()
+        .await
+        .map_err(|error| format!("解析用量数据失败：{error}"))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use serde::{Deserialize, Serialize};
@@ -667,6 +790,8 @@ pub fn run() {
         pro_response: u64,
         total_tokens: u64,
         total_cost: f64,
+        flash_cost: f64,
+        pro_cost: f64,
     }
 
     #[derive(Debug, Serialize)]
@@ -729,34 +854,6 @@ pub fn run() {
             data: CostData,
         }
 
-        async fn get_json<T: serde::de::DeserializeOwned>(
-            client: &reqwest::Client,
-            url: &str,
-            token: &str,
-        ) -> Result<T, String> {
-            let ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 \
-                      (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
-            let resp = client
-                .get(url)
-                .bearer_auth(token)
-                .header("x-app-version", "1.0.0")
-                .header("Accept", "*/*")
-                .header("User-Agent", ua)
-                .timeout(std::time::Duration::from_secs(15))
-                .send()
-                .await
-                .map_err(|error| format!("用量请求失败：{error}"))?;
-            match resp.status().as_u16() {
-                200 => {}
-                401 => return Err("用量 Token 无效或已过期，请重新获取".to_string()),
-                429 => return Err("请求过于频繁，请稍后再试".to_string()),
-                code => return Err(format!("用量接口错误：HTTP {code}")),
-            }
-            resp.json::<T>()
-                .await
-                .map_err(|error| format!("解析用量数据失败：{error}"))
-        }
-
         fn token_breakdown(usage: &[Entry]) -> (u64, u64, u64, u64, u64) {
             // 返回 (总 token, 请求数, 缓存命中, 缓存未命中, 输出 token)
             let mut total = 0u64;
@@ -801,8 +898,8 @@ pub fn run() {
         let cost_url =
             format!("https://platform.deepseek.com/api/v0/usage/cost?month={month}&year={year}");
 
-        let amount: AmountResp = get_json(&client, &amount_url, &token).await?;
-        let cost: CostResp = get_json(&client, &cost_url, &token).await?;
+        let amount: AmountResp = get_platform_json(&client, &amount_url, &token).await?;
+        let cost: CostResp = get_platform_json(&client, &cost_url, &token).await?;
 
         let cost_total = cost.data.biz_data.first();
         let cost_for_model = |model: &str| -> f64 {
@@ -813,33 +910,57 @@ pub fn run() {
         };
 
         let mut models = Vec::new();
+        let mut unknown_models: Vec<&str> = Vec::new();
         for model_usage in &amount.data.biz_data.total {
-            let label = match model_usage.model.as_str() {
-                "deepseek-v4-flash" => Some(("flash", "V4 Flash")),
-                "deepseek-v4-pro" => Some(("pro", "V4 Pro")),
-                _ => None,
+            let Some((key, name)) = model_label(&model_usage.model) else {
+                // 平台再次换模型标识时，卡片会静默消失；留一条日志便于定位。
+                if !unknown_models.contains(&model_usage.model.as_str()) {
+                    unknown_models.push(&model_usage.model);
+                }
+                continue;
             };
-            if let Some((key, name)) = label {
-                let (total, request, hit, miss, response) = token_breakdown(&model_usage.usage);
-                models.push(UsageModelSummary {
-                    key: key.to_string(),
-                    name: name.to_string(),
-                    total_tokens: total,
-                    request_count: request,
-                    cache_hit_tokens: hit,
-                    cache_miss_tokens: miss,
-                    response_tokens: response,
-                    cost: cost_for_model(&model_usage.model),
-                });
-            }
+            let (total, request, hit, miss, response) = token_breakdown(&model_usage.usage);
+            models.push(UsageModelSummary {
+                key: key.to_string(),
+                name: name.to_string(),
+                total_tokens: total,
+                request_count: request,
+                cache_hit_tokens: hit,
+                cache_miss_tokens: miss,
+                response_tokens: response,
+                cost: cost_for_model(&model_usage.model),
+            });
+        }
+        if !unknown_models.is_empty() {
+            log::warn!(
+                "用量接口返回未识别的模型标识：{}",
+                unknown_models.join(", ")
+            );
         }
 
         let mut cost_by_date: std::collections::HashMap<String, f64> =
+            std::collections::HashMap::new();
+        // 按日、按模型的金额，供主面板「调用类型」堆叠柱使用。
+        let mut flash_cost_by_date: std::collections::HashMap<String, f64> =
+            std::collections::HashMap::new();
+        let mut pro_cost_by_date: std::collections::HashMap<String, f64> =
             std::collections::HashMap::new();
         if let Some(item) = cost_total {
             for day in &item.days {
                 let day_cost: f64 = day.data.iter().map(|m| cost_sum(&m.usage)).sum();
                 cost_by_date.insert(day.date.clone(), day_cost);
+                for model_usage in &day.data {
+                    let model_cost = cost_sum(&model_usage.usage);
+                    match model_label(&model_usage.model).map(|(key, _)| key) {
+                        Some("flash") => {
+                            *flash_cost_by_date.entry(day.date.clone()).or_insert(0.0) += model_cost
+                        }
+                        Some("pro") => {
+                            *pro_cost_by_date.entry(day.date.clone()).or_insert(0.0) += model_cost
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
 
@@ -857,14 +978,14 @@ pub fn run() {
             for model_usage in &day.data {
                 let (tokens, _, hit, miss, response) = token_breakdown(&model_usage.usage);
                 total += tokens;
-                match model_usage.model.as_str() {
-                    "deepseek-v4-flash" => {
+                match model_label(&model_usage.model).map(|(key, _)| key) {
+                    Some("flash") => {
                         flash += tokens;
                         flash_hit += hit;
                         flash_miss += miss;
                         flash_resp += response;
                     }
-                    "deepseek-v4-pro" => {
+                    Some("pro") => {
                         pro += tokens;
                         pro_hit += hit;
                         pro_miss += miss;
@@ -885,6 +1006,8 @@ pub fn run() {
                 pro_response: pro_resp,
                 total_tokens: total,
                 total_cost: cost_by_date.get(&day.date).copied().unwrap_or(0.0),
+                flash_cost: flash_cost_by_date.get(&day.date).copied().unwrap_or(0.0),
+                pro_cost: pro_cost_by_date.get(&day.date).copied().unwrap_or(0.0),
             });
         }
 
@@ -899,6 +1022,105 @@ pub fn run() {
         })
     }
 
+    // 按 API Key 拉取指定时间区间的金额。
+    // 平台内部接口，账号可能没有权限，失败时前端只隐藏「API Key」页签，不影响主面板。
+    #[tauri::command]
+    async fn fetch_api_key_usage(
+        start: i64,
+        end: i64,
+        tz: i64,
+    ) -> Result<Vec<ApiKeyCostSeries>, String> {
+        let config = read_stored_config()?;
+        let token = config
+            .usage_token
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| "未配置用量 Token".to_string())?;
+
+        #[derive(Deserialize)]
+        struct KeyMeta {
+            tracking_id: Option<String>,
+            name: Option<String>,
+            sensitive_id: Option<String>,
+        }
+        #[derive(Deserialize)]
+        struct KeyBucket {
+            time: i64,
+            cost: String,
+        }
+        #[derive(Deserialize)]
+        struct KeySeries {
+            api_key: KeyMeta,
+            model: String,
+            buckets: Vec<KeyBucket>,
+        }
+        #[derive(Deserialize)]
+        struct KeyCostByCurrency {
+            currency: String,
+            series: Vec<KeySeries>,
+        }
+        #[derive(Deserialize)]
+        struct KeyCostBiz {
+            data: Vec<KeyCostByCurrency>,
+        }
+        #[derive(Deserialize)]
+        struct KeyCostData {
+            biz_data: KeyCostBiz,
+        }
+        #[derive(Deserialize)]
+        struct KeyCostResp {
+            data: KeyCostData,
+        }
+
+        let url = format!(
+            "https://platform.deepseek.com/api/v0/usage/by_api_key/cost?start={start}&end={end}&tz={tz}"
+        );
+        let client = reqwest::Client::new();
+        let resp: KeyCostResp = get_platform_json(&client, &url, &token).await?;
+
+        let bucket = resp
+            .data
+            .biz_data
+            .data
+            .iter()
+            .find(|item| item.currency == "CNY")
+            .or_else(|| resp.data.biz_data.data.first())
+            .ok_or_else(|| "按 API Key 的用量暂无数据".to_string())?;
+
+        let mut rows = Vec::new();
+        for series in &bucket.series {
+            let Some(tracking_id) = series
+                .api_key
+                .tracking_id
+                .clone()
+                .filter(|value| !value.is_empty())
+            else {
+                continue;
+            };
+            let name = series
+                .api_key
+                .name
+                .clone()
+                .filter(|value| !value.is_empty())
+                .unwrap_or_else(|| "未命名 Key".to_string());
+            let masked_key = series.api_key.sensitive_id.clone().unwrap_or_default();
+            let model = model_label(&series.model)
+                .map(|(key, _)| key.to_string())
+                .unwrap_or_else(|| series.model.to_ascii_lowercase());
+            for entry in &series.buckets {
+                rows.push(RawKeyCost {
+                    tracking_id: tracking_id.clone(),
+                    name: name.clone(),
+                    masked_key: masked_key.clone(),
+                    model: model.clone(),
+                    time: entry.time,
+                    cost: entry.cost.parse::<f64>().unwrap_or(0.0),
+                });
+            }
+        }
+
+        Ok(summarize_key_costs(rows))
+    }
+
     tauri::Builder::default()
         // 单实例守卫：必须作为第一个注册的插件。
         // 程序已运行时再次启动 exe，第二个进程不会新开窗口，
@@ -908,6 +1130,8 @@ pub fn run() {
                 show_main_window(&window);
             }
         }))
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Arc::new(AtomicBool::new(false)))
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
@@ -921,6 +1145,7 @@ pub fn run() {
             save_usage_token,
             clear_usage_token,
             fetch_usage,
+            fetch_api_key_usage,
             start_usage_sync,
             usage_token_captured
         ])
@@ -980,4 +1205,137 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{model_label, summarize_key_costs, RawKeyCost};
+
+    #[test]
+    fn maps_current_platform_model_ids() {
+        assert_eq!(model_label("deepseek-flash"), Some(("flash", "V4.1 Flash")));
+        assert_eq!(model_label("deepseek-v4-pro"), Some(("pro", "V4 Pro")));
+    }
+
+    #[test]
+    fn keeps_legacy_model_aliases() {
+        assert_eq!(model_label("deepseek-v4-flash"), Some(("flash", "V4.1 Flash")));
+        assert_eq!(model_label("deepseek-chat"), Some(("flash", "V4.1 Flash")));
+        assert_eq!(model_label("deepseek-reasoner"), Some(("pro", "V4 Pro")));
+        assert_eq!(
+            model_label("deepseek-v4-flash-vision-exp"),
+            Some(("flash", "V4.1 Flash"))
+        );
+        assert_eq!(
+            model_label("deepseek-v4.1-flash-expires-on-0910"),
+            Some(("flash", "V4.1 Flash"))
+        );
+    }
+
+    #[test]
+    fn ignores_unknown_model_ids() {
+        assert_eq!(model_label("deepseek-v9-ultra"), None);
+        assert_eq!(model_label("gpt-4o"), None);
+        assert_eq!(model_label(""), None);
+    }
+
+    #[test]
+    fn merges_key_costs_across_days_within_same_model() {
+        let rows = vec![
+            RawKeyCost {
+                tracking_id: "a".into(),
+                name: "liqiang".into(),
+                masked_key: "sk-c2d05**1ee6".into(),
+                model: "flash".into(),
+                time: 100,
+                cost: 1.5,
+            },
+            RawKeyCost {
+                tracking_id: "a".into(),
+                name: "liqiang".into(),
+                masked_key: "sk-c2d05**1ee6".into(),
+                model: "flash".into(),
+                time: 100,
+                cost: 2.5,
+            },
+            RawKeyCost {
+                tracking_id: "a".into(),
+                name: "liqiang".into(),
+                masked_key: "sk-c2d05**1ee6".into(),
+                model: "flash".into(),
+                time: 200,
+                cost: 4.0,
+            },
+            RawKeyCost {
+                tracking_id: "b".into(),
+                name: "shiilei".into(),
+                masked_key: "sk-9a1ec**604e".into(),
+                model: "flash".into(),
+                time: 100,
+                cost: 9.0,
+            },
+        ];
+
+        let series = summarize_key_costs(rows);
+        assert_eq!(series.len(), 2);
+        // 按区间总金额降序：b(9.0) 在 a(8.0) 前
+        assert_eq!(series[0].tracking_id, "b");
+        assert_eq!(series[0].total_cost, 9.0);
+        assert_eq!(series[1].tracking_id, "a");
+        assert_eq!(series[1].total_cost, 8.0);
+        // 同一天的两条记录要合并
+        assert_eq!(series[1].days.len(), 2);
+        assert_eq!(series[1].days[0].time, 100);
+        assert_eq!(series[1].days[0].cost, 4.0);
+        assert_eq!(series[1].days[1].time, 200);
+        assert_eq!(series[1].days[1].cost, 4.0);
+    }
+
+    #[test]
+    fn keeps_models_separate_in_key_costs() {
+        let rows = vec![
+            RawKeyCost {
+                tracking_id: "a".into(),
+                name: "liqiang".into(),
+                masked_key: String::new(),
+                model: "flash".into(),
+                time: 100,
+                cost: 1.0,
+            },
+            RawKeyCost {
+                tracking_id: "a".into(),
+                name: "liqiang".into(),
+                masked_key: String::new(),
+                model: "pro".into(),
+                time: 100,
+                cost: 2.0,
+            },
+        ];
+
+        // 详情页按模型过滤，所以同一个 Key 的两个模型不能合并成一条。
+        let series = summarize_key_costs(rows);
+        assert_eq!(series.len(), 2);
+        assert!(series
+            .iter()
+            .any(|item| item.model == "flash" && item.total_cost == 1.0));
+        assert!(series
+            .iter()
+            .any(|item| item.model == "pro" && item.total_cost == 2.0));
+    }
+
+    #[test]
+    fn ignores_key_rows_without_tracking_id() {
+        let series = summarize_key_costs(vec![RawKeyCost {
+            tracking_id: String::new(),
+            name: "x".into(),
+            masked_key: String::new(),
+            model: "flash".into(),
+            time: 1,
+            cost: 1.0,
+        }]);
+        // 空 tracking_id 仍会被合并成一条，但调用方在命令里已过滤；
+        // 这里只确认函数本身不会 panic，且金额被保留。
+        assert_eq!(series.len(), 1);
+        assert_eq!(series[0].total_cost, 1.0);
+    }
 }
