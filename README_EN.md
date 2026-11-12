@@ -206,7 +206,7 @@ See [GitHub Releases](https://github.com/Joyi-code/DeepSeekMonitorWindows/releas
 
 ### v1.2.3
 
-- The "vX available" pill on the balance card now stays visible until the update is installed.
+- The "vX available" pill on the balance card stays visible while an update is pending. Opening Settings does not dismiss it; it disappears after the update is installed.
 
 ### v1.2.2
 
